@@ -1,0 +1,24 @@
+# Maven
+target/
+
+# Azure Functions
+local.settings.json
+
+# Azurite (MUY IMPORTANTE)
+__blobstorage__/
+__queuestorage__/
+__azurite_db_*.json
+AzuriteConfig
+
+# VS Code
+.vscode/
+
+# Java
+*.class
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
