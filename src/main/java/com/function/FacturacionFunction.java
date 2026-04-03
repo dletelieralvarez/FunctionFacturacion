@@ -3,6 +3,7 @@ package com.function;
 import java.util.Optional;
 import java.util.logging.Logger;
 
+import com.function.model.ApiResponse;
 import com.function.model.FacturacionRequest;
 import com.function.model.FacturacionResponse;
 import com.microsoft.azure.functions.ExecutionContext;
@@ -27,13 +28,15 @@ public class FacturacionFunction {
     ) {
         Logger log = context.getLogger();
 
-        try {
+        try {           
             FacturacionRequest body = request.getBody().orElse(null);
 
             if (body == null) {
-                return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
-                        .body("El body no puede venir vacío.")
-                        .build();
+                return jsonResponse(
+                    request,
+                    HttpStatus.BAD_REQUEST,
+                    new ApiResponse<>(false, "El body no puede venir vacío.", null)
+                );
             }
 
             if (isNullOrEmpty(body.getClienteId())
@@ -42,21 +45,29 @@ public class FacturacionFunction {
                     || body.getCantidad() == null
                     || body.getPrecioUnitario() == null) {
 
-                return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
-                        .body("Faltan campos obligatorios: clienteId, mascotaId, detalle, cantidad, precioUnitario.")
-                        .build();
+                return jsonResponse(
+                    request,
+                    HttpStatus.BAD_REQUEST,
+                    new ApiResponse<>(false,
+                        "Faltan campos obligatorios: clienteId, mascotaId, detalle, cantidad, precioUnitario.",
+                        null)
+                );
             }
 
             if (body.getCantidad() <= 0) {
-                return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
-                        .body("La cantidad debe ser mayor a 0.")
-                        .build();
+                return jsonResponse(
+                    request,
+                    HttpStatus.BAD_REQUEST,
+                    new ApiResponse<>(false, "La cantidad debe ser mayor a 0.", null)
+                );                        
             }
 
             if (body.getPrecioUnitario() < 0) {
-                return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
-                        .body("El precioUnitario no puede ser negativo.")
-                        .build();
+                return jsonResponse(
+                    request,
+                    HttpStatus.BAD_REQUEST,
+                    new ApiResponse<>(false, "El precioUnitario no puede ser negativo.", null)
+                );                        
             }
 
             double descuento = body.getDescuento() != null ? body.getDescuento() : 0.0;
@@ -86,21 +97,35 @@ public class FacturacionFunction {
             log.info("Descuento  : " + descuento);
             log.info("Total      : " + total);
 
-            return request.createResponseBuilder(HttpStatus.OK)
-                    .header("Content-Type", "application/json")
-                    .body(response)
-                    .build();
+             return jsonResponse(
+                request,
+                HttpStatus.OK,
+                new ApiResponse<>(true, "Factura generada correctamente.", response)
+            );
 
         } catch (Exception e) {
             log.severe("Error en la función de facturación: " + e.getMessage());
 
-            return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error procesando la facturación.")
-                    .build();
+            return jsonResponse(
+                request,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                new ApiResponse<>(false, "Error procesando la facturación.", null)
+            );
         }
     }
 
     private boolean isNullOrEmpty(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private HttpResponseMessage jsonResponse(
+        HttpRequestMessage<?> request,
+        HttpStatus status,
+        Object body
+    ) {
+        return request.createResponseBuilder(status)
+                .header("Content-Type", "application/json")
+                .body(body)
+                .build();
     }
 }
